@@ -1,0 +1,7 @@
+Edit X:tabsearch/\+Errors: 1,$d
+X:tabsearch/.*\.go: w
+
+go build
+./tabsearch
+
+go test
