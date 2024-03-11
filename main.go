@@ -4,6 +4,9 @@ import (
 	"log"
 	"os/exec"
 	"os"
+
+	"github.com/alecthomas/participle/v2"
+	"github.com/sanity-io/litter"
 )
 
 const scriptsource = `tell application "Safari"
@@ -19,6 +22,17 @@ end tell
 
 const command = "/usr/bin/osascript"
 
+type Value struct {
+	String *string  `@String`
+}
+
+type Tabs struct  {
+	Props []*PropArray `"{" @@  "," @@ "}"`
+}
+
+type  PropArray struct {
+	Values []*Value `"{" ( @@ ( "," @@ )* )? "}"`
+}
 
 func main() {
 	log.Println("goody")
@@ -37,6 +51,22 @@ func main() {
 	// It's not valid JSON. I need a parser. A simple parser.
 	log.Println("output", string(output))
 
-
+	parser, err := participle.Build[Tabs]()
+	if err != nil {
+		log.Println("parser creation failed", err)
+		os.Exit(-2)
+	}
 	
+	ast, err := parser.ParseBytes("", output)
+	if err != nil {
+		log.Println("parsing failed", err)
+		os.Exit(-3)
+	}
+
+	// Example: how to dump the AST
+	log.Println(*ast.Props[0].Values[0].String)
+
+	litter.Dump(ast)
+
+	// TODO(rjk): 
 }
