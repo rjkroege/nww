@@ -1,9 +1,12 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os/exec"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/alecthomas/participle/v2"
 	"github.com/sanity-io/litter"
@@ -35,6 +38,8 @@ type  PropArray struct {
 }
 
 func main() {
+	flag.Parse()
+
 	log.Println("goody")
 
 	// Run the scriptsource command
@@ -66,7 +71,52 @@ func main() {
 	// Example: how to dump the AST
 	log.Println(*ast.Props[0].Values[0].String)
 
-	litter.Dump(ast)
+//	litter.Dump(ast)
 
-	// TODO(rjk): 
+	// TODO(rjk): Consider caching the results during the execution of the filter so that
+	// re-executions don't have to run the AppleScript.
+
+	// make the argument into a regexp
+	res := ".*"
+	if fa := flag.Args(); len(fa) > 0 {
+		res = fa[0]
+	}
+
+	re, err := regexp.Compile(res)
+	if err != nil {
+		log.Printf("can't compile regexp %q: %v", res, err)
+		os.Exit(-4)
+	}
+
+	entries := make([]MatchTab, 0)
+	for i, _ := range(ast.Props[0].Values) {
+		title := *ast.Props[1].Values[i].String
+		url := *ast.Props[0].Values[i].String
+		if re.MatchString(strings.ToLower(title)) || re.MatchString(url) {
+			entries = append(entries, MatchTab{
+				Title: title,
+				Url: url,
+			})
+		}
+	}
+
+	// search the ast with it.
+	// accumulate the matchines
+	litter.Dump(entries)
+
+	
+}
+
+type MatchTab struct {
+	Title string
+	Url string
+}
+
+
+
+func makeRegexp(arg string) (*regexp.Regexp, error) {
+	// TODO(rjk): It's possible to do this more efficiently.
+	ss := strings.Split(arg, "")
+	res := ".*" + strings.Join(ss, ".*",) + ".*"
+	return regexp.Compile(res)
 }
