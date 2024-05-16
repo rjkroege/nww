@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"os/exec"
 	"os"
@@ -38,8 +39,14 @@ type  PropArray struct {
 	Values []*Value `"{" ( @@ ( "," @@ )* )? "}"`
 }
 
+var debugging = flag.Bool("debug", false, "Set for extra logging")
+
 func main() {
 	flag.Parse()
+
+	if !*debugging {
+		log.SetOutput(io.Discard)
+	}
 
 	log.Println("goody")
 
@@ -72,7 +79,9 @@ func main() {
 	// Example: how to dump the AST
 	log.Println(*ast.Props[0].Values[0].String)
 
-//	litter.Dump(ast)
+	if *debugging {
+		litter.Dump(ast)
+	}
 
 	// TODO(rjk): Consider caching the results during the execution of the filter so that
 	// re-executions don't have to run the AppleScript.
@@ -86,7 +95,12 @@ func main() {
 	// Prepare input for the fzf library
 	entries := make([]string, 0)
 	for i, _ := range(ast.Props[0].Values) {
-		entries = append(entries, *ast.Props[1].Values[i].String, *ast.Props[0].Values[i].String)
+		// Even entries are the title.
+		// Odd entries are the URLs.
+		entries = append(entries,
+			strings.Trim(*ast.Props[1].Values[i].String, "\""), 
+			strings.Trim(*ast.Props[0].Values[i].String, "\""),
+		)
 	}
 
 	// TODO(rjk): Explore the options that I want.
@@ -96,18 +110,19 @@ func main() {
 	// needz to fix this up.
 	myFzf.Search(flag.Args()[0])
 
-	// This API is (apparently) designed to permit running multiple searches and
-	// getting results back.
-	// The "right" way is probaby to have a slave process that's feeding me the content
-	// to the slave.
+// This API is (apparently) designed to permit running multiple searches
+// and getting results back. The "right" way is probaby to have a slave
+// process that's feeding me the content to the slave. so... how should
+// that work? Should I do that?
 	result := <- myFzf.GetResultChannel()
 
-
 	// search the ast with it.
-	// accumulate the matchines
-	litter.Dump(result)
+	// accumulate the matchiness
+	if *debugging {
+		litter.Dump(result)
+	}
 
-
+	genAlfredResult(entries, result.Matches)
 	
 }
 
@@ -116,8 +131,6 @@ type MatchTab struct {
 	Url string
 	Relevance int
 }
-
-
 
 func makeRegexp(arg string) (*regexp.Regexp, error) {
 	// TODO(rjk): It's possible to do this more efficiently.
