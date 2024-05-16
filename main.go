@@ -4,14 +4,14 @@ import (
 	"flag"
 	"io"
 	"log"
-	"os/exec"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 
 	"github.com/alecthomas/participle/v2"
-	"github.com/sanity-io/litter"
 	"github.com/reinhrst/fzf-lib"
+	"github.com/sanity-io/litter"
 )
 
 const scriptsource = `tell application "Safari"
@@ -28,14 +28,14 @@ end tell
 const command = "/usr/bin/osascript"
 
 type Value struct {
-	String *string  `@String`
+	String *string `@String`
 }
 
-type Tabs struct  {
+type Tabs struct {
 	Props []*PropArray `"{" @@  "," @@ "}"`
 }
 
-type  PropArray struct {
+type PropArray struct {
 	Values []*Value `"{" ( @@ ( "," @@ )* )? "}"`
 }
 
@@ -53,7 +53,7 @@ func main() {
 	// Run the scriptsource command
 	cmd := exec.Command(command, "-s", "s", "-e", scriptsource)
 	output, err := cmd.Output()
-	
+
 	if err != nil {
 		log.Println("had an error running the command", err)
 		// TODO(rjk): Print stderr.
@@ -69,7 +69,7 @@ func main() {
 		log.Println("parser creation failed", err)
 		os.Exit(-2)
 	}
-	
+
 	ast, err := parser.ParseBytes("", output)
 	if err != nil {
 		log.Println("parsing failed", err)
@@ -94,11 +94,11 @@ func main() {
 
 	// Prepare input for the fzf library
 	entries := make([]string, 0)
-	for i, _ := range(ast.Props[0].Values) {
+	for i := range ast.Props[0].Values {
 		// Even entries are the title.
 		// Odd entries are the URLs.
 		entries = append(entries,
-			strings.Trim(*ast.Props[1].Values[i].String, "\""), 
+			strings.Trim(*ast.Props[1].Values[i].String, "\""),
 			strings.Trim(*ast.Props[0].Values[i].String, "\""),
 		)
 	}
@@ -106,15 +106,15 @@ func main() {
 	// TODO(rjk): Explore the options that I want.
 	options := fzf.DefaultOptions()
 	myFzf := fzf.New(entries, options)
-	
+
 	// needz to fix this up.
 	myFzf.Search(flag.Args()[0])
 
-// This API is (apparently) designed to permit running multiple searches
-// and getting results back. The "right" way is probaby to have a slave
-// process that's feeding me the content to the slave. so... how should
-// that work? Should I do that?
-	result := <- myFzf.GetResultChannel()
+	// This API is (apparently) designed to permit running multiple searches
+	// and getting results back. The "right" way is probaby to have a slave
+	// process that's feeding me the content to the slave. so... how should
+	// that work? Should I do that?
+	result := <-myFzf.GetResultChannel()
 
 	// search the ast with it.
 	// accumulate the matchiness
@@ -123,18 +123,18 @@ func main() {
 	}
 
 	genAlfredResult(entries, result.Matches)
-	
+
 }
 
 type MatchTab struct {
-	Title string
-	Url string
+	Title     string
+	Url       string
 	Relevance int
 }
 
 func makeRegexp(arg string) (*regexp.Regexp, error) {
 	// TODO(rjk): It's possible to do this more efficiently.
 	ss := strings.Split(arg, "")
-	res := ".*" + strings.Join(ss, ".*",) + ".*"
+	res := ".*" + strings.Join(ss, ".*") + ".*"
 	return regexp.Compile(res)
 }

@@ -23,11 +23,11 @@ func genAlfredResult(entries []string, fzfies []fzf.MatchResult) {
 		// Exclude the Uid field to make sure that the items aren't re-ordered.
 		var url, title string
 
-		if v.HayIndex % 2 == 0 {
-			url = entries[v.HayIndex + 1]
+		if v.HayIndex%2 == 0 {
+			url = entries[v.HayIndex+1]
 			title = v.Key
 		} else {
-			title = entries[v.HayIndex - 1]
+			title = entries[v.HayIndex-1]
 			url = v.Key
 		}
 		// Unique the objects.
@@ -39,7 +39,7 @@ func genAlfredResult(entries []string, fzfies []fzf.MatchResult) {
 		result.Items = append(result.Items, &Item{
 			Title:        title,
 			Arg:          url,
-			Subtitle: url,
+			Subtitle:     url,
 			Autocomplete: title,
 			relevance:    v.Score,
 			Valid:        true,
@@ -59,8 +59,8 @@ type Item struct {
 	Subtitle     string `json:"subtitle,omitempty"`
 	Arg          string `json:"arg"`
 	Autocomplete string `json:"autocomplete"`
-	Valid        bool `json:"valid"`
-	relevance int
+	Valid        bool   `json:"valid"`
+	relevance    int
 }
 
 type Result struct {
